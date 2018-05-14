@@ -60,7 +60,7 @@ class Command(stack.commands.CartArgumentProcessor,
 		self.beginOutput()
 
 		try:
-			carts = self.getCartInfo(args, params)
+			carts = self.getCartInfo(args)
 		except:
 			carts = []
 
