@@ -2523,7 +2523,10 @@ class Command:
 		return {'host1': {'rack': '0', 'rank': '1', ...}, 'host2': {...}, ...}
 		This works because multiple attr's cannot have the same name.
 		"""
-		params = [host]
+		if type(host) == type([]):
+			params = host
+		else:
+			params = [host]
 		if attr:
 			params.append(f'attr={attr}')
 
