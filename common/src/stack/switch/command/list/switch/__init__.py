@@ -22,6 +22,12 @@ class Command(command):
 	all the known switches is listed.
 	</arg>
 
+	<param type='boolean' name='expanded'>
+	If set to True, list additional switch information provided by plugins which
+	may require slower lookups.
+	Default is False.
+	</param>
+
 	<example cmd='list host switch-0-0'>
 	List info for switch-0-0.
 	</example>

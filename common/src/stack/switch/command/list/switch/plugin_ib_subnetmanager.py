@@ -26,7 +26,7 @@ class Plugin(stack.commands.Plugin):
 		host_info = dict.fromkeys(hosts)
 		for host in dict(host_info):
 			make, model = (switch_attrs[host].get('component.make'), switch_attrs[host].get('component.model'))
-			if (make, model) != ('Mellanox', '7800'):
+			if (make, model) != ('Mellanox', 'm7800'):
 				# ... but set other hosts to an empty value instead of False
 				host_info[host] = (None,)
 				continue
