@@ -6,6 +6,7 @@
 
 import stack.commands
 import stack.util
+from stack.bool import str2bool
 
 class command(stack.commands.SwitchArgumentProcessor,
 	stack.commands.list.command):
@@ -31,8 +32,13 @@ class Command(command):
 	"""
 	def run(self, params, args):
 		
-		(order, ) = self.fillParams([ ('order', 'asc') ])
-				
+		(order, expanded) = self.fillParams([
+			('order', 'asc'),
+			('expanded', False),
+		])
+
+		self.expanded = str2bool(expanded)
+
 		switches = self.getSwitchNames(args)
 
 		header = ['switch']

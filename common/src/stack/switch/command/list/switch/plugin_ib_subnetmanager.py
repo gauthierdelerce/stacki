@@ -4,6 +4,8 @@
 # https://github.com/Teradata/stacki/blob/master/LICENSE.txt
 # @copyright@
 
+from operator import itemgetter
+
 import stack.commands
 from stack.switch.m7800 import SwitchMellanoxM7800
 
@@ -16,14 +18,15 @@ class Plugin(stack.commands.Plugin):
 		return ['basic']
 
 	def run(self, hosts):
-		host_info = dict.fromkeys(hosts)
+		if not self.owner.expanded:
+			return {'keys': [], 'values': {}}
 
 		switch_attrs = self.owner.getHostAttrDict('a:switch')
 
+		host_info = dict.fromkeys(hosts)
 		for host in dict(host_info):
-			# TODO get manufacturer ('make'?) too?
-			# only check subnetmanager status for Mellanox 7800's
-			if not switch_attrs[host].get('component.model') == 'm7800':
+			make, model = (switch_attrs[host].get('component.make'), switch_attrs[host].get('component.model'))
+			if (make, model) != ('Mellanox', '7800'):
 				# ... but set other hosts to an empty value instead of False
 				host_info[host] = (None,)
 				continue
