@@ -132,7 +132,10 @@ class SwitchMellanoxM7800(Switch):
 		0x7FFF is reserved for the Default partition.  0x0 is invalid
 		"""
 
-		pkey = int(pkey)
+		try:
+			pkey = int(pkey)
+		except ValueError:
+			return None
 		if pkey < 2 and pkey > 32766:
 			return None
 
