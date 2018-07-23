@@ -7,13 +7,21 @@ from . import mellanoknok
 
 partition_name = re.compile('  [a-z0-9]', re.IGNORECASE)
 members_header = re.compile('  members', re.IGNORECASE)
+# a GUID is a like a MAC, but 8 pairs
 guid_format = re.compile("([0-9a-f]{2}:){7}[0-9a-f]{2}|ALL", re.IGNORECASE)
+# a GID is like an ipv6? 20 pairs
+gid_format = re.compile("([0-9a-f]{2}:){19}[0-9a-f]{2}|ALL", re.IGNORECASE)
 
 
 class SwitchMellanoxM7800(Switch):
 	"""
 	Class for interfacing with a Mellanox 7800 Infiniband Switch.
 	"""
+
+	def supported(*cls):
+		return [
+			('Mellanox', 'm7800'),
+		]
 
 	def __init__(self, switch_ip_address, switchname='switch', username='admin', password=''):
 		# Grab the user supplied info, in case there is a difference (PATCH)
