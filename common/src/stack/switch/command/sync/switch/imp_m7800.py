@@ -4,10 +4,11 @@
 # https://github.com/Teradata/stacki/blob/master/LICENSE.txt
 # @copyright@
 
+import shlex
 from operator import itemgetter
 from collections import namedtuple
 
-IfInfo = namedtuple('IfInfo', ['host', 'interface', 'network', 'mac', 'ip', 'vlan'])
+IfInfo = namedtuple('IfInfo', ['host', 'interface', 'network', 'mac', 'ip', 'options'])
 
 import stack.commands
 from stack.exception import CommandError
@@ -41,40 +42,46 @@ class Implementation(stack.commands.Implementation):
 			partition = attr.lstrip('partition.name.')
 			if partition in s.partitions:
 				continue
-			s.add_partition(partition, val)
+			try:
+				s.add_partition(partition, val)
+			except SwitchException as e:
+				msg = f'Error while attempting to add partition "{partition}" to {switch} with pkey "{val}":\n{e}'
+				raise CommandError(self.owner, msg)
 
-		# assume an ibN iface with a VLAN is its partition, unless it has an IP addr, too?
-		# which guid gets added?
 		lst_host_iface = self.owner.call('list.host.interface')
 
-		iface_getter = itemgetter('host', 'interface', 'network', 'mac', 'ip', 'vlan')
+		iface_getter = itemgetter('host', 'interface', 'network', 'mac', 'ip', 'options')
 
+		# assume an ibN iface with its partition specified in 'options'
 		for row in lst_host_iface:
 			iface = IfInfo(*iface_getter(row))
-			print(iface)
 
-			if iface.vlan is None:
+			if iface.options is None:
+				# no partition info set
+				continue
+			if 'ibpartition=' not in iface.options:
 				# no partition info set
 				continue
 			if not iface.interface.startswith('ib'):
 				# not an ib iface
 				continue
-			if iface.ip:
-				# you're using ipoib...
-				continue
 			if not iface.mac:
 				# no guid
 				continue
 
-			partition = '0x%04d' % iface.vlan
-			print(partition)
-			print(s.partitions)
+			opts = shlex.split(iface.options)
+			part_info = next(opt.split('=') for opt in opts if opt.startswith('ibpartition='))
+			try:
+				# error or ignore?
+				partition = '0x%04d' % int(part_info[1])
+			except:
+				continue
+
 			if partition not in s.partitions:
-				print('not in partitions')
 				# partition specified but doesn't exist on switch
 				continue
 
-			print('yay')
 			s.add_partition_member(partition, iface.mac)
+			s.add_partition_member('Default', iface.mac)
 
 

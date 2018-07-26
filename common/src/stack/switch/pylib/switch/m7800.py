@@ -160,7 +160,7 @@ class SwitchMellanoxM7800(Switch):
 				raise SwitchException(f'a partition key is required for partition: {partition}.')
 			pkey = self._validate_pkey(pkey)
 			if not pkey:
-				raise SwitchException('partition keys must be between 2 and 32766')
+				raise SwitchException('InfiniBand partition keys must be between 2 and 32766')
 
 		if str(partition) == 'Default':
 			add_part_seq = [
@@ -190,9 +190,14 @@ class SwitchMellanoxM7800(Switch):
 		"""
 		Add a member to `partition` on the switch, identified by `guid`.
 		"""
-		m = re.fullmatch(guid_format, guid)
+
+		# check for a guid or gid
+		m = re.fullmatch(guid_format, guid) or re.fullmatch(gid_format, guid)
 		if not m:
 			raise SwitchException(f'GUID {guid} not valid')
+
+		# either way, get the final 23 characters (all of guid, relevant portion of gid)
+		guid = m[0][-23:]
 
 		# too expensive?
 		cur_partitions = self.partitions
