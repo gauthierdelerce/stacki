@@ -52,7 +52,7 @@ class Implementation(stack.commands.Implementation):
 
 		iface_getter = itemgetter('host', 'interface', 'network', 'mac', 'ip', 'options')
 
-		# assume an ibN iface with its partition specified in 'options'
+		# for backend nodes, we're looking for 'ibpartition' specified in the 'options' field of ibN ifaces
 		for row in lst_host_iface:
 			iface = IfInfo(*iface_getter(row))
 

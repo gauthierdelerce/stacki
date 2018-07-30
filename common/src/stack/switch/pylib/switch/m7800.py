@@ -211,9 +211,13 @@ class SwitchMellanoxM7800(Switch):
 		"""
 		Remove a member from `partition` on the switch, identified by `guid`.
 		"""
-		m = re.fullmatch(guid_format, guid)
+		# check for a guid or gid
+		m = re.fullmatch(guid_format, guid) or re.fullmatch(gid_format, guid)
 		if not m:
 			raise SwitchException(f'GUID {guid} not valid')
+
+		# either way, get the final 23 characters (all of guid, relevant portion of gid)
+		guid = m[0][-23:]
 
 		# too expensive?
 		cur_partitions = self.partitions
