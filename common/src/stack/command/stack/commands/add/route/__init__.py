@@ -36,15 +36,21 @@ class Command(stack.commands.add.command):
 	Specific interface to send traffic through. Should only be used if
 	you need traffic to go through a VLAN interface (e.g., 'eth0.1').
 	</param>
+
+	<param type='string' name='environment'>
+	Name of the route environment. For most users this is not specified.
+	Environments allow you to partition routes into logical groups.
+	</param>
 	"""
 
 	def run(self, params, args):
 
-		(address, gateway, netmask, interface) = self.fillParams([
+		(address, gateway, netmask, interface, environment) = self.fillParams([
 			('address', None, True),
 			('gateway', None, True),
 			('netmask', '255.255.255.255'),
-			('interface', None)
+			('interface', None),
+			('environment', None)
 			])
 
 		#
@@ -73,6 +79,11 @@ class Command(stack.commands.add.command):
 			interface='NULL'
 		
 		self.db.execute("""insert into global_routes
+				(network, netmask, gateway, subnet, interface)
 				values ('%s', '%s', %s, %s, '%s')""" %
 				(address, netmask, gateway, subnet, interface))
+
+		if environment:
+			self.command('set.route.environment',
+					[address, f'environment={environment}'])
 
