@@ -66,7 +66,7 @@ class command(stack.commands.HostArgumentProcessor,
 
 	def doParams(self):
 
-		(service, network, outnetwork, chain, action, protocol, flags,
+		(service, network, outnetwork, chain, action, protocol, flags, environment,
 			comment, table, rulename) = self.fillParams([
 				('service',		None,	True),
 				('network',		None),
@@ -75,6 +75,7 @@ class command(stack.commands.HostArgumentProcessor,
 				('action',		None,	True),
 				('protocol',		None,	True),
 				('flags',		None),
+				('environment',		None),
 				('comment',		None),
 				('table',		'filter'),
 				('rulename',		None),
@@ -140,7 +141,7 @@ class command(stack.commands.HostArgumentProcessor,
 			rulename = "%s" % uuid.uuid1()
 
 		return (service, network, outnetwork, chain, action,
-			protocol, flags, comment, table, rulename)
+			protocol, flags, environment, comment, table, rulename)
 
 
 	def checkRule(self, hierarchy, extrawhere, service, network, outnetwork,
@@ -236,6 +237,11 @@ class Command(command):
 	which the admin can remove or override the rule.
 	</param>
 
+	<param type='string' name='environment'>
+	Name of the firewall environment. For most users this is not specified.
+	Environments allow you to partition firewalls into logical groups.
+	</param>
+
 	<example cmd='add firewall network=public service="ssh"
 protocol="tcp" action="ACCEPT" chain="INPUT" flags="-m state --state NEW"
 table="filter" rulename="accept_public_ssh"'>
@@ -257,7 +263,7 @@ table="filter" rulename="accept_public_ssh"'>
 	"""
 	def run(self, params, args):
 		
-		(service, network, outnetwork, chain, action, protocol, flags,
+		(service, network, outnetwork, chain, action, protocol, flags, environment,
 		 comment, table, rulename) = self.doParams()
 
 		self.checkRule('global_firewall', '', service, network,
@@ -265,3 +271,8 @@ table="filter" rulename="accept_public_ssh"'>
 
 		self.insertRule('global_firewall', '', '', service, network,
 			outnetwork, chain, action, protocol, flags, comment, table, rulename)
+
+		if environment:
+			self.command('set.firewall.environment',
+					[rulename, f'environment={environment}'])
+

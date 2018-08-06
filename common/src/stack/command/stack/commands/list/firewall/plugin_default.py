@@ -30,6 +30,11 @@ class Plugin(stack.commands.Plugin):
 		else:
 			output_network = self.owner.getNetworkName(outid)
 
+		if environment:
+			environment, = self.db.select("""name from environments
+							where id = %s""", ([environment]))
+			environment = ', '.join(environment)
+
 		rule = (name, table, service, protocol, chain, action, network,
 			output_network, flags, environment, comment, source, rule_type)
 

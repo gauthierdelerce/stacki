@@ -16,7 +16,7 @@ class Command(stack.commands.EnvironmentArgumentProcessor,
 	used to partition a single Frontend into managing multiple clusters.
 
 	<arg type='string' name='firewall' repeat='1'>
-	One or more routes.
+	One or more firewall rule names.
 	</arg>
 
 	<param type='string' name='environment' optional='0'>
