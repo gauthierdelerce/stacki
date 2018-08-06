@@ -200,7 +200,8 @@ CREATE TABLE global_routes (
   Netmask	varchar(32) NOT NULL default '',
   Gateway	varchar(32) NOT NULL default '',
   Subnet	int(11)	default NULL references subnets,
-  Interface	varchar(32) default NULL
+  Interface	varchar(32) default NULL,
+  Environment	int(11) default NULL references environments
 );
 
 DROP TABLE IF EXISTS os_routes;
@@ -318,6 +319,7 @@ CREATE TABLE global_firewall (
   Action        varchar(256) default NULL,
   Chain         varchar(256) default NULL,
   Flags         varchar(256) default NULL,
+  Environment	int(11) default NULL references environments,
   Comment       varchar(256) default NULL
 );
 
