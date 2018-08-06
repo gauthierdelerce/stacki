@@ -19,7 +19,7 @@ class Plugin(stack.commands.Plugin):
 	"""
 
 	def formatRule(self, name, table, inid, outid, service, protocol,
-			chain, action, flags, comment, source, rule_type):
+			chain, action, flags, environment, comment, source, rule_type):
 
 		if inid == 0:
 			network = 'all'
@@ -31,7 +31,7 @@ class Plugin(stack.commands.Plugin):
 			output_network = self.owner.getNetworkName(outid)
 
 		rule = (name, table, service, protocol, chain, action, network,
-                        output_network, flags, comment, source, rule_type)
+			output_network, flags, environment, comment, source, rule_type)
 
 		self.resolved_rules[name] = rule
 
@@ -68,7 +68,7 @@ class Plugin(stack.commands.Plugin):
 					flags = '-m multiport'
 					self.intrinsic_rules.append(('STACKI-INSTALLATION-%s' % net_name.upper(), 'filter', ','.join(service_list),
 						protocol, 'INPUT', 'ACCEPT', net_name, output_network,
-						flags, comment, 'G', 'const'))
+						flags, None, comment, 'G', 'const'))
 					service_list = ['tftp', 'bootps', 'bootpc']
 					comment = 'Accept UDP traffic for TFTP on %s network - Intrinsic rule' % ( net_name)
 					flags = '-m multiport'
@@ -79,16 +79,16 @@ class Plugin(stack.commands.Plugin):
 					flags = ''
 					self.intrinsic_rules.append(('STACKI-MQ-PUBLISH-PORT-%s' % net_name.upper(), 'filter', str(stack.mq.ports.publish),
 						'udp', 'INPUT', 'ACCEPT', net_name, output_network,
-						flags, comment , 'G', 'const'))
+						flags, None, comment , 'G', 'const'))
 				if dns:
 					flags = '-s %s/%s' % (network['address'], network['mask'])
 					comment = "Accept DNS traffic over %s network - Intrinsic Rule" % (net_name)
 					self.intrinsic_rules.append(('STACKI-DNS-%s' % net_name.upper(), 'filter', 'domain',
 						'all', 'INPUT', 'ACCEPT', net_name, output_network,
-						flags, comment , 'G', 'const'))
+						flags, None, comment , 'G', 'const'))
 			else:
 				if pxe:
-					f = lambda x: x['network'] == net_name 
+					f = lambda x: x['network'] == net_name
 					fip = list(filter(f, frontend_ips))
 					if len(fip):
 						frontend_ip_flag = '-s %s' % fip[0]['ip']
@@ -99,7 +99,7 @@ class Plugin(stack.commands.Plugin):
 					comment = 'Accept all frontend traffic on %s network - Intrinsic rule' % ( net_name)
 					self.intrinsic_rules.append(('STACKI-FRONTEND-INGRESS', 'filter', 'all',
 						'all', 'INPUT', 'ACCEPT', net_name, output_network,
-						flags, comment, 'G', 'const'))
+						flags, None, comment, 'G', 'const'))
 
 
 	def categorizeRules(self):
@@ -121,11 +121,11 @@ class Plugin(stack.commands.Plugin):
 		output_actions = self.intrinsic_rules + self.accept_rules + self.other_rules + self.reject_rules
 		for action in output_actions:
 			(name, table, service, protocol, chain, action, network,
-                        output_network, flags, comment, source, rule_type) = action
+                        output_network, flags, environment, comment, source, rule_type) = action
 
 			self.owner.addOutput(colName, (name, table, service,
 				protocol, chain, action, network, output_network,
-				flags, comment, source, rule_type))
+				flags, environment, comment, source, rule_type))
 
 	def empty_lists(self):
 		del self.accept_rules[:]
@@ -136,18 +136,18 @@ class Plugin(stack.commands.Plugin):
 
 	def global_firewall(self, args, host=''):
 		self.owner.db.execute("""select insubnet, outsubnet, service,
-			protocol, chain, action, flags, comment, tabletype,
+			protocol, chain, action, flags, environment, comment, tabletype,
 			name from global_firewall""")
 
-		for i, o, s, p, c, a, f, cmt, tt, n in self.db.fetchall():
-			self.formatRule(n, tt, i, o, s, p, c, a, f, cmt, 
+		for i, o, s, p, c, a, f, e, cmt, tt, n in self.db.fetchall():
+			self.formatRule(n, tt, i, o, s, p, c, a, f, e, cmt,
 				'G', 'var')
 		if not host:
 			self.categorizeRules()
 			self.printOutput('')
 			self.owner.endOutput(header=['', 'name', 'table', 'service',
 				'protocol', 'chain', 'action', 'network',
-				'output-network', 'flags', 'comment', 
+				'output-network', 'flags', 'environment', 'comment',
 				'source', 'type'])
 
 	def os_firewall(self, args, host=''):
@@ -159,7 +159,7 @@ class Plugin(stack.commands.Plugin):
 				% (host))
 
 			for n, tt, i, o, s, p, c, a, f, cmt in self.db.fetchall():
-				self.formatRule(n, tt, i, o, s, p, c, a, f,
+				self.formatRule(n, tt, i, o, s, p, c, a, f, None,
 					cmt, 'O', 'var')
 		else:
 			for os in self.owner.getOSNames(args):
@@ -169,7 +169,7 @@ class Plugin(stack.commands.Plugin):
 					where os = '%s' """ % os)
 
 				for n, tt, i, o, s, p, c, a, f, cmt in self.db.fetchall():
-					self.formatRule(n, tt, i, o, s, p, c, a, f,
+					self.formatRule(n, tt, i, o, s, p, c, a, f, None,
 						cmt, 'O', 'var')
 
 				self.categorizeRules()
@@ -178,7 +178,7 @@ class Plugin(stack.commands.Plugin):
 
 			self.owner.endOutput(header=['os', 'name', 'table', 'service',
 				'protocol', 'chain', 'action', 'network',
-				'output-network', 'flags', 'comment', 'source', 
+				'output-network', 'flags', 'environment', 'comment', 'source',
 				'type'], trimOwner=0)
 
 	def appliance_firewall(self, args, host=''):
@@ -191,7 +191,7 @@ class Plugin(stack.commands.Plugin):
 				""" % host)
 
 			for n, tt, i, o, s, p, c, a, f, cmt in self.db.fetchall():
-				self.formatRule(n, tt, i, o, s, p, c, a, f,
+				self.formatRule(n, tt, i, o, s, p, c, a, f, None,
 					cmt, 'A', 'var')
 		else:
 			for app in self.owner.getApplianceNames(args):
@@ -204,7 +204,7 @@ class Plugin(stack.commands.Plugin):
 				self.empty_lists()
 
 				for i, o, s, p, c, a, f, cmt, n, tt in self.db.fetchall():
-					self.formatRule(n, tt, i, o, s, p, c, a, f,
+					self.formatRule(n, tt, i, o, s, p, c, a, f, None,
 						cmt, 'A', 'var')
 
 				self.categorizeRules()
@@ -212,7 +212,7 @@ class Plugin(stack.commands.Plugin):
 
 			self.owner.endOutput(header=['appliance', 'name', 'table',
 				'service', 'protocol', 'chain', 'action', 'network',
-				'output-network', 'flags', 'comment', 'source',
+				'output-network', 'flags', 'environment', 'comment', 'source',
 				'type'], trimOwner=0)
 
 	def host_firewall(self, args):
@@ -235,7 +235,7 @@ class Plugin(stack.commands.Plugin):
 				% (host))
 
 			for n, tt, i, o, s, p, c, a, f, cmt in self.db.fetchall():
-				self.formatRule(n, tt, i, o, s, p, c, a, f,
+				self.formatRule(n, tt, i, o, s, p, c, a, f, None,
 					cmt, 'H', 'var')
 
 			# Add Intrinsic rules
@@ -248,7 +248,7 @@ class Plugin(stack.commands.Plugin):
 
 		self.owner.endOutput(header=['host', 'name', 'table', 'service',
 			'protocol', 'chain', 'action', 'network',
-			'output-network', 'flags', 'comment', 'source', 'type' ])
+			'output-network', 'flags', 'environment', 'comment', 'source', 'type' ])
 
 	lookup = {      'global'    : global_firewall,
 			'os'        : os_firewall,
