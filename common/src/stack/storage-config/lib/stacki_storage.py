@@ -137,7 +137,7 @@ def getHostDisks(nukedisks):
 		else:
 			if name not in diskentry[mediatype]:
 				diskentry[mediatype].append(name)
-		
+
 	if disks:
 		disks.sort(key = sortDiskId)
 
@@ -229,8 +229,7 @@ def getHostPartitions(disks, host_fstab):
 				disk_partitions['partnumber'] = partnumber
 
 			if label:
-				disk_partitions['options'] = \
-					'--label=%s' % label
+				disk_partitions['options'] = '--label=%s' % label
 			else:
 				disk_partitions['options'] = ''
 
@@ -249,8 +248,7 @@ def getHostFstab(devices):
 	fstab = mountpoint + '/etc/fstab'
 
 	for device in devices:
-		os.system('mount %s %s' % (device, mountpoint) + \
-			' > /dev/null 2>&1')
+		os.system('mount %s %s' % (device, mountpoint) + ' > /dev/null 2>&1')
 
 		if os.path.exists(fstab):
 			file = open(fstab)
@@ -258,22 +256,22 @@ def getHostFstab(devices):
 			for line in file.readlines():
 				entry = {}
 
-				l = line.split()
-				if len(l) < 3:
+				split_line = line.split()
+				if len(split_line) < 3:
 					continue
 
-				if l[0][0] == '#':
+				if split_line[0][0] == '#':
 					continue
 
-				entry['device'] = l[0].strip()
-				entry['mountpoint'] = l[1].strip()
-				entry['fstype'] = l[2].strip()
+				entry['device'] = split_line[0].strip()
+				entry['mountpoint'] = split_line[1].strip()
+				entry['fstype'] = split_line[2].strip()
 
 				host_fstab.append(entry)
 
 			file.close()
 
-		os.system('umount %s 2> /dev/null' % (mountpoint))
+		os.system('umount %s 2> /dev/null' % mountpoint)
 
 		if host_fstab:
 			break
@@ -291,14 +289,18 @@ def get_sles11_media_type(dev_name):
 	Because SLES 11 doesn't support TYPE field on lsblk commands
 	"""
 	p = subprocess.run(["hwinfo", "--block", "--short"],
-		stdin=subprocess.PIPE,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE)
+	                   stdin=subprocess.PIPE,
+	                   stdout=subprocess.PIPE,
+	                   stderr=subprocess.PIPE)
+	last_state = 'loop'
 	for l in p.stdout.decode().split('\n'):
 		# Ignore empty lines or non-path
 		if not l.strip() or "/" not in l.strip():
+			if l.split(':')[0] in ['disk', 'part', 'raid', 'lvm']:
+				last_state = l.split(':')[0]
 			continue
 		arr = l.split()
+
 		if dev_name == os.path.split(arr[0])[1]:
 			if str(arr[1]).lower() == "disk":
 				return "disk"
@@ -306,5 +308,5 @@ def get_sles11_media_type(dev_name):
 				return "part"
 			return arr[1]
 	# If we can't find what we are looking for, lie and say its "loop"
-	# I think that is the only other option if it is not a disk or parition.
-	return "loop"
+	# I think that is the only other option if it is not a disk or partition.
+	return last_state
