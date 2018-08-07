@@ -7,7 +7,9 @@
 import re
 import shlex
 import stack.commands
+from stack.commands import Log
 from stack.exception import CommandError
+import syslog
 
 
 class Implementation(stack.commands.Implementation):
@@ -35,7 +37,9 @@ class Implementation(stack.commands.Implementation):
 			default = row['default']
 
 			if ip and not netname:
-				raise CommandError(self, f'interface "{interface}" on host "{row["host"]}" has an IP but no network')
+				Log(f'WARNING: skipping interface "{interface}" on host "{row["host"]}" - '
+				     'interface has an IP but no network', level=syslog.LOG_WARNING)
+				continue
 
 			mtu = None
 			if subnet:

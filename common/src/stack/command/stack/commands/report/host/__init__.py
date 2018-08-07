@@ -11,10 +11,12 @@
 # @rocks@
 
 import stack.commands
+from stack.commands import Log
 from stack.exception import CommandError
 import stack.text
 import os.path
 import shlex
+import syslog
 
 
 class command(stack.commands.HostArgumentProcessor,
@@ -67,7 +69,9 @@ class Command(command):
 			if not row['ip']:
 				continue
 			if not row['network']:
-				raise CommandError(self, f'interface "{row["interface"]}" on host "{row["host"]}" has an IP but no network')
+				Log(f'WARNING: skipping interface "{row["interface"]}" on host "{row["host"]}" - '
+				     'interface has an IP but no network', level=syslog.LOG_WARNING)
+				continue
 
 			# Each interface dict contains interface name,
 			# zone, whether the interface is the default one,

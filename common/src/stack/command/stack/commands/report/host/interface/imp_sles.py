@@ -9,7 +9,9 @@ import shlex
 import ipaddress
 from stack.bool import str2bool
 import stack.commands
+from stack.commands import Log
 from stack.exception import CommandError
+import syslog
 
 
 class Implementation(stack.commands.Implementation):
@@ -39,7 +41,9 @@ class Implementation(stack.commands.Implementation):
 			bootproto = 'static'
 
 			if ip and not netname:
-				raise CommandError(self, f'interface "{interface}" on host "{o["host"]}" has an IP but no network')
+				Log(f'WARNING: skipping interface "{interface}" on host "{o["host"]}" - '
+				     'interface has an IP but no network', level=syslog.LOG_WARNING)
+				continue
 
 			if netname and ip and netmask:
 				net       = ipaddress.IPv4Network('%s/%s' % (ip, netmask), strict=False)
