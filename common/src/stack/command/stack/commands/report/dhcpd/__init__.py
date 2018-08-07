@@ -14,7 +14,9 @@ import stack
 import ipaddress
 from   stack.exception import CommandError
 import stack.commands
+from stack.commands import Log
 import stack.text
+import syslog
 
 header = """
 ddns-update-style none;
@@ -154,14 +156,19 @@ class Command(stack.commands.HostArgumentProcessor,
 
 			if channel:
 				if device == 'ipmi' and not ip:
-					raise CommandError(self, f'IPMI interface on host {host} has a channel but no IP')
+					Log(f'WARNING: skipping IPMI interface on host "{host}" - interface has a channel but no IP',
+					    level=syslog.LOG_WARNING)
+					continue
 				elif device != 'ipmi' and channel not in other_interfaces:
-					msg = f'Interface "{device}" on host "{host}" has channel "{channel}" that does not match any other interface on the host'
-					raise CommandError(self, msg)
-
+					Log(f'WARNING: skipping interface "{device}" on host "{host}" - '
+					    f'interface has channel "{channel}" that does not match any other interface on the host',
+					    level=syslog.LOG_WARNING)
+					continue
 			if host in host_devices:
 				if device in host_devices[host]:
-					raise CommandError(self, f'Duplicate interface "{device}" on host "{host}"')
+					Log(f'WARNING: skipping interface "{device}" on host "{host}" - duplicate interface detected',
+					    level=syslog.LOG_WARNING)
+					continue
 				else:
 					host_devices[host].append(device)
 			elif host:
@@ -183,7 +190,12 @@ class Command(stack.commands.HostArgumentProcessor,
 			#
 			for (mac, ip, dev) in data[name]:
 				if not ip:
-					ip = self.resolve_ip(name, dev)
+					try:
+						ip = self.resolve_ip(name, dev)
+					except ValueError:
+						Log(f'WARNING: skipping interface "{device}" on host "{host}" - duplicate interface detected',
+						    level=syslog.LOG_WARNING)
+						continue
 				netname = None
 				if ip:
 					r = self.db.select("""
