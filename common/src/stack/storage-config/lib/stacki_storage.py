@@ -296,17 +296,15 @@ def get_sles11_media_type(dev_name):
 	for l in p.stdout.decode().split('\n'):
 		# Ignore empty lines or non-path
 		if not l.strip() or "/" not in l.strip():
-			if l.split(':')[0] in ['disk', 'part', 'raid', 'lvm']:
+			if l.split(':')[0].lower() in ['disk', 'part', 'partition', 'raid', 'lvm']:
 				last_state = l.split(':')[0]
 			continue
 		arr = l.split()
 
 		if dev_name == os.path.split(arr[0])[1]:
-			if str(arr[1]).lower() == "disk":
-				return "disk"
-			if str(arr[1]).lower() == "partition":
-				return "part"
-			return arr[1]
-	# If we can't find what we are looking for, lie and say its "loop"
+			media_type = str(arr[1]).lower()
+			if media_type.lower() in ['disk', 'part', 'partition', 'raid', 'lvm', 'loop']:
+				return "loop"
+	# If we can't find what we are looking for assume last_state is correct
 	# I think that is the only other option if it is not a disk or partition.
 	return last_state
